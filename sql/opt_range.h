@@ -1219,7 +1219,7 @@ private:
                                 READ_RECORD *read_record,
                                 bool intersection,
                                 key_map *filtered_scans,
-                                Unique **unique_ptr);
+                                Unique_impl **unique_ptr);
 
 };
 
@@ -1310,7 +1310,7 @@ public:
 class QUICK_INDEX_SORT_SELECT : public QUICK_SELECT_I
 {
 protected:
-  Unique *unique;
+  Unique_impl *unique;
 public:
   QUICK_INDEX_SORT_SELECT(THD *thd, TABLE *table);
   ~QUICK_INDEX_SORT_SELECT();
