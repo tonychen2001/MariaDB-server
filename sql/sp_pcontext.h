@@ -85,6 +85,12 @@ public:
   const Spvar_definition *find_row_field(const LEX_CSTRING *var_name,
                                          const LEX_CSTRING *field_name,
                                          uint *row_field_offset);
+
+  class Item_splocal *create_item_splocal_array_element(THD *thd,
+                                        const class Sp_rcontext_handler *rh,
+                                        Item *index,
+                                        uint pos_in_q,
+                                        uint len_in_q);
 };
 
 ///////////////////////////////////////////////////////////////////////////
