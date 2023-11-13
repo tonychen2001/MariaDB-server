@@ -121,6 +121,8 @@ public:
            bound
         5. But some of the IN-equalities aren't (so this can't be handled by 
            FirstMatch strategy)
+        6. This is NOT a temporary table with a unique hash key, the current
+           loose scan implementation cannot use this.
     */
     best_loose_scan_cost= DBL_MAX;
     if (!join->emb_sjm_nest && s->emb_sj_nest &&                        // (1)
@@ -131,6 +133,8 @@ public:
         !(remaining_tables & 
           s->emb_sj_nest->nested_join->sj_corr_tables) &&               // (4)
         remaining_tables & s->emb_sj_nest->nested_join->sj_depends_on &&// (5)
+        !(s->table->key_info &&                                         // (6)
+          s->table->key_info->flags & HA_UNIQUE_HASH) &&
         optimizer_flag(join->thd, OPTIMIZER_SWITCH_LOOSE_SCAN))
     {
       /* This table is an LooseScan scan candidate */
