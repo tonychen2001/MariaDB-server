@@ -9430,6 +9430,7 @@ TC_LOG::run_commit_ordered(THD *thd, bool all)
       thd->transaction->xid_state.set_state_code(XA_PREPARED);
       thd->transaction->xid_state.set_cache_element_to_recovered();
       thd->transaction->xid_state.xid_cache_element= 0;
+      ha_close_connection(thd, true /* skip binlog */);
     }
   }
   else if (thd->transaction->xid_state.is_explicit_XA())

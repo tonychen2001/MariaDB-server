@@ -1154,7 +1154,6 @@ static bool slave_applier_reset_xa_trans(THD *thd)
                 (ha_count_rw_all(thd, &ha_info) == 0));
 #endif
     thd->transaction->xid_state.xid_cache_element->acquired_to_recovered();
-    thd->wakeup_subsequent_commits(thd->is_error());
     thd->transaction->xid_state.xid_cache_element= 0;
   }
 
@@ -1167,6 +1166,10 @@ static bool slave_applier_reset_xa_trans(THD *thd)
   thd->transaction->all.ha_list= 0;
 
   ha_close_connection(thd);
+
+  DBUG_ASSERT(!thd->is_error());
+
+  thd->wakeup_subsequent_commits(0);
   thd->transaction->cleanup();
   thd->transaction->all.reset();
 

@@ -909,14 +909,16 @@ ha_commit_checkpoint_request(void *cookie, void (*pre_hook)(void *))
   there's no need to rollback here as all transactions must
   be rolled back already
 */
-void ha_close_connection(THD* thd)
+void ha_close_connection(THD* thd, bool skip_binlog)
 {
   for (auto i= 0; i < MAX_HA; i++)
   {
     if (plugin_ref plugin= thd->ha_data[i].lock)
     {
-      thd->ha_data[i].lock= NULL;
       handlerton *hton= plugin_hton(plugin);
+      if (skip_binlog && hton == binlog_hton)
+        continue;
+      thd->ha_data[i].lock= NULL;
       if (hton->close_connection)
         hton->close_connection(hton, thd);
       thd_set_ha_data(thd, hton, 0);
@@ -1529,7 +1531,15 @@ int ha_prepare(THD *thd)
   {
     int err;
     bool has_binlog= has_binlog_hton(ha_info, thd);
-
+#ifdef ENABLED_DEBUG_SYNC
+    DBUG_EXECUTE_IF(
+        "stop_before_binlog_prepare",
+        if (thd->rgi_slave->current_gtid.seq_no % 100 == 0)
+        {
+          DBUG_ASSERT(!debug_sync_set_action(
+                        thd, STRING_WITH_LEN("now WAIT_FOR binlog_xap")));
+        };);
+#endif
     if (has_binlog && (err= prepare_or_error(binlog_hton, thd, all)))
     {
       ha_rollback_trans(thd, all);
@@ -1562,6 +1572,17 @@ int ha_prepare(THD *thd)
 
       }
     }
+#ifdef ENABLED_DEBUG_SYNC
+    DBUG_EXECUTE_IF(
+        "stop_after_binlog_prepare",
+        if (thd->rgi_slave->current_gtid.seq_no % 100 == 0)
+        {
+          DBUG_ASSERT(!debug_sync_set_action(
+            thd,
+            STRING_WITH_LEN(
+                "now SIGNAL xa_prepare_binlogged WAIT_FOR continue_xap")));
+        };);
+#endif
   }
 err:
   DBUG_RETURN(error);
@@ -2221,13 +2242,14 @@ int ha_rollback_trans(THD *thd, bool all)
       rollback without signalling following transactions. And in release
       builds, we explicitly do the signalling before rolling back.
     */
-    DBUG_ASSERT(
-        !(thd->rgi_slave &&
-          !thd->rgi_slave->worker_error &&
-          thd->rgi_slave->did_mark_start_commit) ||
-        (thd->transaction->xid_state.is_explicit_XA() ||
-         (thd->rgi_slave->gtid_ev_flags2 & Gtid_log_event::FL_PREPARED_XA)));
-
+    DBUG_ASSERT(!(thd->rgi_slave &&
+                  !thd->rgi_slave->worker_error &&
+                  thd->rgi_slave->did_mark_start_commit) ||
+                (thd->transaction->xid_state.is_explicit_XA() ||
+                 /* MDEV-31038 */
+                 (thd->rgi_slave->gtid_ev_flags2 &
+                  (Gtid_log_event::FL_PREPARED_XA |
+                   Gtid_log_event::FL_COMPLETED_XA))));
     if (thd->rgi_slave &&
         !thd->rgi_slave->worker_error &&
         thd->rgi_slave->did_mark_start_commit)
