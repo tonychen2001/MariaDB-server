@@ -12270,3 +12270,11 @@ ER_JSON_INVALID_VALUE_FOR_KEYWORD
 ER_JSON_SCHEMA_KEYWORD_UNSUPPORTED
         eng "%s keyword is not supported"
         sw "%s neno kuu halitumiki"
+ER_SEQUENCE_TABLE_HAS_WRONG_NUMBER_OF_COLUMNS
+        eng "Wrong number of columns"
+ER_SEQUENCE_TABLE_CANNOT_HAVE_ANY_KEYS
+        eng "Sequence tables cannot have any keys"
+ER_SEQUENCE_TABLE_CANNOT_HAVE_ANY_CONSTRAINTS
+        eng "Sequence tables cannot have any constraints"
+ER_SEQUENCE_TABLE_ORDER_BY
+        eng "ORDER BY"
