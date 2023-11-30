@@ -154,6 +154,7 @@ bool mark_unsupported_function(const char *w1, const char *w2,
 #define DELETION_FL                   (1 << 8)
 #define IMMUTABLE_FL                  (1 << 9)
 #define SUBSTITUTION_FL               (1 << 10)
+#define GROUP_FL                      (1 << 11)
 #define EXTRACTION_MASK                                                \
   (NO_EXTRACTION_FL | FULL_EXTRACTION_FL | DELETION_FL | IMMUTABLE_FL)
 

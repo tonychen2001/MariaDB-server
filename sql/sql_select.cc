@@ -25055,7 +25055,7 @@ setup_group(THD *thd, Ref_ptr_array ref_pointer_array, TABLE_LIST *tables,
     if (find_order_in_list(thd, ref_pointer_array, tables, ord, fields,
                            all_fields, true, true, from_window_spec))
       return 1;
-    (*ord->item)->marker= UNDEF_POS;		/* Mark found */
+    (*ord->item)->marker= GROUP_FL;		/* Mark found */
     if ((*ord->item)->with_sum_func() && context_analysis_place == IN_GROUP_BY)
     {
       my_error(ER_WRONG_GROUP_FIELD, MYF(0), (*ord->item)->full_name());
@@ -25101,7 +25101,7 @@ setup_group(THD *thd, Ref_ptr_array ref_pointer_array, TABLE_LIST *tables,
     field= naf_it++;
     while (field && (item=li++))
     {
-      if (item->type() != Item::SUM_FUNC_ITEM && item->marker >= 0 &&
+      if (item->type() != Item::SUM_FUNC_ITEM && !(item->marker & GROUP_FL) &&
           !item->const_item() &&
           !(item->real_item()->type() == Item::FIELD_ITEM &&
             item->used_tables() & OUTER_REF_TABLE_BIT))
@@ -25109,10 +25109,11 @@ setup_group(THD *thd, Ref_ptr_array ref_pointer_array, TABLE_LIST *tables,
         while (field)
         {
           /* Skip fields from previous expressions. */
-          if (field->marker < cur_pos_in_select_list)
+          const int field_pos = field->marker & ~GROUP_FL;
+          if (field_pos < cur_pos_in_select_list)
             goto next_field;
           /* Found a field from the next expression. */
-          if (field->marker > cur_pos_in_select_list)
+          if (field_pos > cur_pos_in_select_list)
             break;
           /*
             Check whether the field occur in the GROUP BY list.
