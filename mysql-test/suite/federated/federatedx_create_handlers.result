@@ -134,21 +134,20 @@ SELECT *
 FROM federated.t3, (SELECT * FROM federated.t1 WHERE id > 3) t
 WHERE federated.t3.name=t.name;
 name	id	name
-yyy	5	yyy
 yyy	7	yyy
 yyy	5	yyy
 yyy	7	yyy
+yyy	5	yyy
 xxx	4	xxx
-yyy	5	yyy
 yyy	7	yyy
+yyy	5	yyy
 EXPLAIN
 SELECT *
 FROM federated.t3, (SELECT * FROM federated.t1 WHERE id > 3) t
 WHERE federated.t3.name=t.name;
 id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
-1	PRIMARY	t3	ALL	NULL	NULL	NULL	NULL	7	
-1	PRIMARY	<derived2>	ref	key0	key0	18	federated.t3.name	2	
-2	PUSHED DERIVED	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	5	Using where
+1	SIMPLE	t3	ALL	NULL	NULL	NULL	NULL	7	Using where; Using join buffer (flat, BNL join)
 EXPLAIN FORMAT=JSON
 SELECT *
 FROM federated.t3, (SELECT * FROM federated.t1 WHERE id > 3) t
@@ -158,29 +157,23 @@ EXPLAIN
   "query_block": {
     "select_id": 1,
     "table": {
-      "table_name": "t3",
+      "table_name": "t1",
       "access_type": "ALL",
-      "rows": 7,
-      "filtered": 100
-    },
-    "table": {
-      "table_name": "<derived2>",
-      "access_type": "ref",
-      "possible_keys": ["key0"],
-      "key": "key0",
-      "key_length": "18",
-      "used_key_parts": ["name"],
-      "ref": ["federated.t3.name"],
-      "rows": 2,
+      "rows": 5,
       "filtered": 100,
-      "materialized": {
-        "query_block": {
-          "select_id": 2,
-          "table": {
-            "message": "Pushed derived"
-          }
-        }
-      }
+      "attached_condition": "federated.t1.`id` > 3"
+    },
+    "block-nl-join": {
+      "table": {
+        "table_name": "t3",
+        "access_type": "ALL",
+        "rows": 7,
+        "filtered": 100
+      },
+      "buffer_type": "flat",
+      "buffer_size": "251",
+      "join_type": "BNL",
+      "attached_condition": "federated.t3.`name` = federated.t1.`name`"
     }
   }
 }
@@ -189,9 +182,8 @@ SELECT *
 FROM federated.t3, (SELECT * FROM federated.t1 WHERE id > 3) t
 WHERE federated.t3.name=t.name;
 id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
-1	PRIMARY	t3	ALL	NULL	NULL	NULL	NULL	7	7.00	100.00	100.00	
-1	PRIMARY	<derived2>	ref	key0	key0	18	federated.t3.name	2	1.00	100.00	100.00	
-2	PUSHED DERIVED	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	5	5.00	100.00	60.00	Using where
+1	SIMPLE	t3	ALL	NULL	NULL	NULL	NULL	7	7.00	100.00	33.33	Using where; Using join buffer (flat, BNL join)
 SELECT *
 FROM federated.t3, (SELECT t1.name FROM federated.t1
 WHERE id IN (SELECT count(*)
@@ -206,9 +198,10 @@ WHERE id IN (SELECT count(*)
 FROM federated.t2 GROUP BY name)) t
 WHERE federated.t3.name=t.name;
 id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
-1	PRIMARY	t3	ALL	NULL	NULL	NULL	NULL	7	
-1	PRIMARY	<derived2>	ref	key0	key0	18	federated.t3.name	2	
-2	PUSHED DERIVED	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+1	PRIMARY	t1	ALL	NULL	NULL	NULL	NULL	5	
+1	PRIMARY	<subquery3>	eq_ref	distinct_key	distinct_key	8	federated.t1.id	1	Using where
+1	PRIMARY	t3	ALL	NULL	NULL	NULL	NULL	7	Using where; Using join buffer (flat, BNL join)
+3	MATERIALIZED	t2	ALL	NULL	NULL	NULL	NULL	7	Using temporary
 ANALYZE FORMAT=JSON
 SELECT *
 FROM federated.t3, (SELECT t1.name FROM federated.t1
@@ -222,37 +215,68 @@ ANALYZE
     "r_loops": 1,
     "r_total_time_ms": "REPLACED",
     "table": {
-      "table_name": "t3",
+      "table_name": "t1",
       "access_type": "ALL",
       "r_loops": 1,
-      "rows": 7,
-      "r_rows": 7,
+      "rows": 5,
+      "r_rows": 5,
       "r_total_time_ms": "REPLACED",
       "filtered": 100,
       "r_filtered": 100
     },
     "table": {
-      "table_name": "<derived2>",
-      "access_type": "ref",
-      "possible_keys": ["key0"],
-      "key": "key0",
-      "key_length": "18",
-      "used_key_parts": ["name"],
-      "ref": ["federated.t3.name"],
-      "r_loops": 7,
-      "rows": 2,
-      "r_rows": 0.1429,
+      "table_name": "<subquery3>",
+      "access_type": "eq_ref",
+      "possible_keys": ["distinct_key"],
+      "key": "distinct_key",
+      "key_length": "8",
+      "used_key_parts": ["count(*)"],
+      "ref": ["federated.t1.id"],
+      "r_loops": 5,
+      "rows": 1,
+      "r_rows": 0.4,
       "r_total_time_ms": "REPLACED",
       "filtered": 100,
       "r_filtered": 100,
+      "attached_condition": "federated.t1.`id` = `<subquery3>`.`count(*)`",
       "materialized": {
+        "unique": 1,
         "query_block": {
-          "select_id": 2,
-          "table": {
-            "message": "Pushed derived"
+          "select_id": 3,
+          "r_loops": 1,
+          "r_total_time_ms": "REPLACED",
+          "temporary_table": {
+            "table": {
+              "table_name": "t2",
+              "access_type": "ALL",
+              "r_loops": 1,
+              "rows": 7,
+              "r_rows": 7,
+              "r_total_time_ms": "REPLACED",
+              "filtered": 100,
+              "r_filtered": 100
+            }
           }
         }
       }
+    },
+    "block-nl-join": {
+      "table": {
+        "table_name": "t3",
+        "access_type": "ALL",
+        "r_loops": 1,
+        "rows": 7,
+        "r_rows": 7,
+        "r_total_time_ms": "REPLACED",
+        "filtered": 100,
+        "r_filtered": 100
+      },
+      "buffer_type": "flat",
+      "buffer_size": "349",
+      "join_type": "BNL",
+      "attached_condition": "federated.t3.`name` = federated.t1.`name`",
+      "r_filtered": 7.1429,
+      "r_unpack_time_ms": "REPLACED"
     }
   }
 }
@@ -326,16 +350,14 @@ EXPLAIN
 #
 create table t5 (a int) engine=myisam;
 insert into t5 values (1),(2);
-# Must not show lines with id=3
 explain 
 select * from t5, 
 (select id from federated.t1
 where name in (select name from federated.t2) or name like 'foo%') as TQ;
 id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
 1	PRIMARY	t5	ALL	NULL	NULL	NULL	NULL	2	
-1	PRIMARY	<derived2>	ALL	NULL	NULL	NULL	NULL	5	Using join buffer (flat, BNL join)
-2	PUSHED DERIVED	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
-# Must not show elements with select_id=3
+1	PRIMARY	t1	ALL	NULL	NULL	NULL	NULL	5	Using where; Using join buffer (flat, BNL join)
+3	MATERIALIZED	t2	ALL	NULL	NULL	NULL	NULL	7	
 explain format=json
 select * from t5, 
 (select id from federated.t1
@@ -352,23 +374,30 @@ EXPLAIN
     },
     "block-nl-join": {
       "table": {
-        "table_name": "<derived2>",
+        "table_name": "t1",
         "access_type": "ALL",
         "rows": 5,
-        "filtered": 100
+        "filtered": 100,
+        "attached_condition": "<in_optimizer>(federated.t1.`name`,federated.t1.`name` in (subquery#3)) or federated.t1.`name` like 'foo%'"
       },
       "buffer_type": "flat",
       "buffer_size": "65",
       "join_type": "BNL",
-      "materialized": {
+      "attached_condition": "<in_optimizer>(federated.t1.`name`,federated.t1.`name` in (subquery#3)) or federated.t1.`name` like 'foo%'"
+    },
+    "subqueries": [
+      {
         "query_block": {
-          "select_id": 2,
+          "select_id": 3,
           "table": {
-            "message": "Pushed derived"
+            "table_name": "t2",
+            "access_type": "ALL",
+            "rows": 7,
+            "filtered": 100
           }
         }
       }
-    }
+    ]
   }
 }
 drop table t5;

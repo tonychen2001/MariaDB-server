@@ -94,12 +94,9 @@ DEFAULT CHARSET=latin1;
 INSERT INTO federated.t3 VALUES
   ('yyy'), ('www'), ('yyy'), ('xxx'), ('www'), ('yyy'), ('www');
 
-#Enable after fix MDEV-31361
---disable_ps2_protocol
 SELECT *
 FROM federated.t3, (SELECT * FROM federated.t1 WHERE id > 3) t
 WHERE federated.t3.name=t.name;
---enable_ps2_protocol
 
 EXPLAIN
 SELECT *
@@ -194,13 +191,11 @@ where name in (select name from federated.t2);
 create table t5 (a int) engine=myisam;
 insert into t5 values (1),(2);
 
---echo # Must not show lines with id=3
 explain 
 select * from t5, 
 (select id from federated.t1
  where name in (select name from federated.t2) or name like 'foo%') as TQ;
 
---echo # Must not show elements with select_id=3
 explain format=json
 select * from t5, 
 (select id from federated.t1

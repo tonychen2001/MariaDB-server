@@ -1621,7 +1621,7 @@ bool pushdown_cond_for_derived(THD *thd, Item *cond, TABLE_LIST *derived)
 
 derived_handler *TABLE_LIST::find_derived_handler(THD *thd)
 {
-  if (!derived || is_recursive_with_table())
+  if (!derived || is_recursive_with_table() || is_merged_derived())
     return 0;
   for (SELECT_LEX *sl= derived->first_select(); sl; sl= sl->next_select())
   {
