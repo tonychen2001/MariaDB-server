@@ -2489,14 +2489,20 @@ fil_ibd_load(
 		/* Compare the filename we are trying to open with the
 		filename from the first node of the tablespace we opened
 		previously. Fail if it is different. */
-		fil_node_t* node = UT_LIST_GET_FIRST(space->chain);
-		if (0 != strcmp(innobase_basename(filename),
-				innobase_basename(node->name))) {
-			ib::info()
-				<< "Ignoring data file '" << filename
-				<< "' with space ID " << space->id
-				<< ". Another data file called " << node->name
-				<< " exists with the same space ID.";
+		const fil_space_t::name_type name = space->name();
+		const size_t filename_len = strlen(filename);
+
+		if (filename_len < (name.size() + 1)
+		    || memcmp(filename + filename_len - (name.size() + 1),
+			      name.data() - 1, name.size() + 1)) {
+			sql_print_information("InnoDB: Ignoring data file '%s'"
+					      " with space ID " ULINTPF
+					      ". Another data file called %s"
+					      " exists"
+					      " with the same space ID.",
+					      filename, space->id,
+					      UT_LIST_GET_FIRST(space->chain)
+					      ->name);
 			space = NULL;
 			return(FIL_LOAD_ID_CHANGED);
 		}
