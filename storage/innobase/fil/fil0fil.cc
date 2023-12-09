@@ -2486,27 +2486,15 @@ fil_ibd_load(
 	mysql_mutex_unlock(&fil_system.mutex);
 
 	if (space) {
-		/* Compare the filename we are trying to open with the
-		filename from the first node of the tablespace we opened
-		previously. Fail if it is different. */
-		const fil_space_t::name_type name = space->name();
-		const size_t filename_len = strlen(filename);
-
-		if (filename_len < (name.size() + 1)
-		    || memcmp(filename + filename_len - (name.size() + 1),
-			      name.data() - 1, name.size() + 1)) {
-			sql_print_information("InnoDB: Ignoring data file '%s'"
-					      " with space ID " ULINTPF
-					      ". Another data file called %s"
-					      " exists"
-					      " with the same space ID.",
-					      filename, space->id,
-					      UT_LIST_GET_FIRST(space->chain)
-					      ->name);
-			space = NULL;
-			return(FIL_LOAD_ID_CHANGED);
-		}
-		return(FIL_LOAD_OK);
+		sql_print_information("InnoDB: Ignoring data file '%s'"
+				      " with space ID " ULINTPF
+				      ". Another data file called %s"
+				      " exists"
+				      " with the same space ID.",
+				      filename, space->id,
+				      UT_LIST_GET_FIRST(space->chain)->name);
+		space = NULL;
+		return FIL_LOAD_ID_CHANGED;
 	}
 
 	if (srv_operation == SRV_OPERATION_RESTORE) {
