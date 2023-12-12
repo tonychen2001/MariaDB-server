@@ -3845,6 +3845,49 @@ byte *recv_dblwr_t::find_page(const page_id_t page_id,
   return result;
 }
 
+uint32_t recv_dblwr_t::find_first_page(const char* name, os_file_t file)
+{
+  uint32_t space= 0;
+  os_offset_t file_size= os_file_get_size(file);
+  if (file_size == (os_offset_t) -1) return space;
+  for (auto it= pages.begin(); it != pages.end();)
+  {
+    byte* page= *it;
+    uint32_t space_id= page_get_space_id(page);
+    if (page_get_page_no(page) > 0 || space_id == 0)
+    {
+next_page:
+      it++;
+      continue;
+    }
+    uint32_t flags= mach_read_from_4(
+      FSP_HEADER_OFFSET + FSP_SPACE_FLAGS + page);
+    page_id_t page_id(space_id, 0);
+    size_t page_size= fil_space_t::physical_size(flags);
+    if (file_size < 4 * page_size) goto next_page;
+    byte* read_page= static_cast<byte*>(
+      aligned_malloc(page_size, page_size));
+    /** Read 3 pages from the file and match the space id
+    with the space id which is stored in
+    doublewrite buffer page. */
+    for (ulint j= 1; j <= 3; j++)
+    {
+      if (os_file_read(IORequestRead, file, read_page,
+                       j * page_size, page_size) != DB_SUCCESS)
+        goto next_page;
+      if (buf_page_is_corrupted(false, read_page, flags)
+          || space_id != page_get_space_id(read_page))
+	goto next_page;
+    }
+    space= space_id;
+    break;
+  }
+
+  if (space && !restore_first_page(space, name, file))
+    return space;
+  return 0;
+}
+
 bool recv_dblwr_t::restore_first_page(ulint space_id, const char *name,
                                       os_file_t file)
 {
