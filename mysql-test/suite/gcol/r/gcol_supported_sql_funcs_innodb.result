@@ -2866,12 +2866,12 @@ show create table t1;
 Table	Create Table
 t1	CREATE TABLE `t1` (
   `a` varchar(1024) DEFAULT NULL,
-  `b` varchar(1024) GENERATED ALWAYS AS (decode(encode(`a`,'abc'),'abc')) VIRTUAL
+  `b` varchar(1024) GENERATED ALWAYS AS (encode(encode(`a`,'abc'),'abc')) VIRTUAL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci
 insert into t1 values ('MySQL',default);
 select * from t1;
 a	b
-MySQL	MySQL
+MySQL	ÒBUÖ9
 drop table t1;
 set sql_warnings = 0;
 # DEFAULT()
