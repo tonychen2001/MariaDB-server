@@ -662,12 +662,11 @@ void trx_purge_truncate_history()
         buf_block_buf_fix_inc(block, __FILE__, __LINE__);
         buf_pool.flush_hp.set(prev);
         mysql_mutex_unlock(&buf_pool.flush_list_mutex);
+        rw_lock_x_lock(&block->lock);
 
 #ifdef BTR_CUR_HASH_ADAPT
         ut_ad(!block->index); /* There is no AHI on undo tablespaces. */
 #endif
-        rw_lock_x_lock(&block->lock);
-        mysql_mutex_lock(&buf_pool.flush_list_mutex);
         ut_ad(bpage->io_fix() == BUF_IO_NONE);
 
         if (bpage->oldest_modification() > 2 &&
@@ -678,6 +677,15 @@ void trx_purge_truncate_history()
           buf_block_buf_fix_dec(block);
           rw_lock_x_unlock(&block->lock);
         }
+
+        /* The functions buf_pool_t::release_freed_page() or
+        buf_do_flush_list_batch() may be right now holding
+        buf_pool.mutex and waiting to acquire
+        buf_pool.flush_list_mutex. Ensure that they can proceed.
+        This avoids extreme waits on Ubuntu 18.04. */
+        mysql_mutex_lock(&buf_pool.mutex);
+        mysql_mutex_lock(&buf_pool.flush_list_mutex);
+        mysql_mutex_unlock(&buf_pool.mutex);
 
         if (prev != buf_pool.flush_hp.get())
         {
