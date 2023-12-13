@@ -1798,7 +1798,7 @@ public:
 
   virtual bool setup(THD *thd, size_t max_heap_table_size)
   {
-    Descriptor *desc;
+    Keys_descriptor *desc;
     if (table_field->is_packable())
     {
       tree_key_length= compute_packable_length(table_field);
@@ -1816,7 +1816,7 @@ public:
                            max_heap_table_size, 1, desc);
     if (!tree)
       return true; // OOM
-    return tree->get_descriptor()->setup_for_field(thd, table_field);
+    return tree->get_keys_descriptor()->setup_for_field(thd, table_field);
   }
 
 
@@ -1830,7 +1830,7 @@ public:
     DBUG_ASSERT(tree);
     if (tree->is_variable_sized())
     {
-      Descriptor *descriptor= tree->get_descriptor();
+      Keys_descriptor *descriptor= tree->get_keys_descriptor();
       uchar *rec_ptr=  descriptor->make_record(true);
       DBUG_ASSERT(descriptor->get_length_of_key(rec_ptr) <= tree->get_size());
       return tree->unique_add(rec_ptr);
@@ -1912,8 +1912,8 @@ int Count_distinct_field::key_cmp(void* arg,
                                   uchar* key2)
 {
   Count_distinct_field *compare_arg= (Count_distinct_field*)arg;
-  DBUG_ASSERT(compare_arg->tree->get_descriptor());
-  return compare_arg->tree->get_descriptor()->compare_keys(key1, key2);
+  DBUG_ASSERT(compare_arg->tree->get_keys_descriptor());
+  return compare_arg->tree->get_keys_descriptor()->compare_keys(key1, key2);
 }
 
 
@@ -1937,7 +1937,7 @@ public:
   bool setup(THD *thd, size_t max_heap_table_size) override
   {
     tree_key_length= sizeof(ulonglong);
-    Descriptor *desc= new Fixed_size_keys_mem_comparable(tree_key_length);
+    Keys_descriptor *desc= new Fixed_size_keys_mem_comparable(tree_key_length);
     if (!desc)
       return true;
     tree= new Unique_impl((qsort_cmp2) simple_ulonglong_key_cmp,
@@ -1968,8 +1968,8 @@ int Count_distinct_field_bit::simple_ulonglong_key_cmp(void* arg,
                                                        uchar* key2)
 {
   Count_distinct_field_bit *compare_arg= (Count_distinct_field_bit*)arg;
-  DBUG_ASSERT(compare_arg->tree->get_descriptor());
-  return compare_arg->tree->get_descriptor()->compare_keys(key1, key2);
+  DBUG_ASSERT(compare_arg->tree->get_keys_descriptor());
+  return compare_arg->tree->get_keys_descriptor()->compare_keys(key1, key2);
 }
 
 

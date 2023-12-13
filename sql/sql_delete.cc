@@ -748,7 +748,7 @@ bool mysql_delete(THD *thd, TABLE_LIST *table_list, COND *conds,
       clause.  Instead of deleting the rows, first mark them deleted.
     */
     ha_rows tmplimit=limit;
-    Descriptor *desc= new Fixed_size_keys_for_rowids(table->file);
+    Keys_descriptor *desc= new Fixed_size_keys_for_rowids(table->file);
     if (!desc)
       goto terminate_delete;  // OOM
 
@@ -1327,7 +1327,7 @@ multi_delete::initialize_tables(JOIN *join)
     walk= walk->next_local;
   }
   Unique_impl *unique;
-  Descriptor *desc;
+  Keys_descriptor *desc;
   for (;walk ;walk= walk->next_local)
   {
     TABLE *table=walk->table;

@@ -29,7 +29,7 @@
 class Item_sum;
 class Aggregator_distinct;
 class Aggregator_simple;
-class Descriptor;
+class Keys_descriptor;
 
 /**
   The abstract base class for the Aggregator_* classes.
@@ -607,10 +607,10 @@ public:
                                   uint size_arg, size_t max_in_memory_size_arg,
                                   uint min_dupl_count_arg, bool allow_packing,
                                   uint number_of_args);
-  virtual Descriptor *get_descriptor_for_fixed_size_keys(uint args_count,
-                                                         uint size_arg);
-  virtual Descriptor *get_descriptor_for_variable_size_keys(uint args_count,
-                                                            uint size_arg);
+  virtual Keys_descriptor *get_descriptor_for_fixed_size_keys(uint args_count,
+                                                              uint size_arg);
+  virtual Keys_descriptor *get_descriptor_for_variable_size_keys(uint args_count,
+                                                                 uint size_arg);
 };
 
 
@@ -2115,10 +2115,10 @@ public:
                                           void *item_arg);
   int insert_record_to_unique();
   int insert_packed_record_to_unique();
-  Descriptor *get_descriptor_for_fixed_size_keys(uint args_count,
-                                                 uint size_arg) override;
-  Descriptor *get_descriptor_for_variable_size_keys(uint args_count,
-                                                    uint size_arg) override;
+  Keys_descriptor *get_descriptor_for_fixed_size_keys(uint args_count,
+                                                      uint size_arg) override;
+  Keys_descriptor *get_descriptor_for_variable_size_keys(uint args_count,
+                                                         uint size_arg) override;
 };
 
 #endif /* ITEM_SUM_INCLUDED */

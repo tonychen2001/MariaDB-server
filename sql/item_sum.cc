@@ -710,7 +710,7 @@ int Aggregator_distinct::key_cmp(void* arg, uchar* key1, uchar* key2)
 {
   Aggregator_distinct *aggr= (Aggregator_distinct *) arg;
   DBUG_ASSERT(aggr->tree);
-  return aggr->tree->get_descriptor()->compare_keys(key1, key2);
+  return aggr->tree->get_keys_descriptor()->compare_keys(key1, key2);
 }
 
 
@@ -890,7 +890,7 @@ bool Aggregator_distinct::setup(THD *thd)
         the server with a DoS attack
       */
       if (!tree ||
-          (tree->get_descriptor()->setup_for_item(thd, item_sum,
+          (tree->get_keys_descriptor()->setup_for_item(thd, item_sum,
                                                   non_const_items,
                                                   item_sum->get_arg_count())))
         return TRUE;
@@ -995,7 +995,7 @@ int Aggregator_distinct::insert_record_to_unique()
   if (tree->is_variable_sized())
   {
     uchar *rec_ptr;
-    Descriptor *descriptor= tree->get_descriptor();
+    Keys_descriptor *descriptor= tree->get_keys_descriptor();
     if ((rec_ptr= descriptor->make_record(true)) == NULL)
       return -1; // NULL value
     DBUG_ASSERT(descriptor->get_length_of_key(rec_ptr) <= tree->get_size());
@@ -3642,7 +3642,7 @@ int group_concat_key_cmp_with_distinct_with_nulls(void* arg,
                                                   const void* key2)
 {
   Item_func_group_concat *item_func= (Item_func_group_concat*)arg;
-  return item_func->unique_filter->get_descriptor()
+  return item_func->unique_filter->get_keys_descriptor()
          ->compare_keys((uchar *)key1, (uchar *)key2);
 }
 
@@ -3665,7 +3665,7 @@ int group_concat_packed_key_cmp_with_distinct(void *arg,
   DBUG_ASSERT(item_func->unique_filter);
   uchar *a= (uchar*)a_ptr;
   uchar *b= (uchar*)b_ptr;
-  return item_func->unique_filter->get_descriptor()->compare_keys(a, b);
+  return item_func->unique_filter->get_keys_descriptor()->compare_keys(a, b);
 }
 
 
@@ -3944,7 +3944,7 @@ Item_func_group_concat::dump_leaf_variable_sized_key(void *key_arg,
   uint old_length= result->length();
   SORT_FIELD *pos;
 
-  pos= item->unique_filter->get_descriptor()->get_sortorder();
+  pos= item->unique_filter->get_keys_descriptor()->get_sortorder();
   key_end= key + item->unique_filter->get_full_size();
   key+= Variable_size_keys_descriptor::size_of_length_field;
 
@@ -4594,7 +4594,7 @@ bool Item_func_group_concat::setup(THD *thd)
                              non_const_items);
 
   if (!unique_filter ||
-      (unique_filter->get_descriptor()->setup_for_item(thd, this,
+      (unique_filter->get_keys_descriptor()->setup_for_item(thd, this,
                                                        non_const_items,
                                                        arg_count_field)))
     DBUG_RETURN(TRUE);
@@ -4846,7 +4846,7 @@ Item_sum::get_unique(qsort_cmp2 comp_func, void *comp_func_fixed_arg,
                      uint min_dupl_count_arg, bool allow_packing,
                      uint number_of_args)
 {
-  Descriptor *desc;
+  Keys_descriptor *desc;
 
   if (allow_packing)
     desc= get_descriptor_for_variable_size_keys(number_of_args, size_arg);
@@ -4881,7 +4881,7 @@ void Item_func_group_concat::print(String *str, enum_query_type query_type)
       orig_args[i + arg_count_field]->print(str, query_type);
       if (order[i]->direction == ORDER::ORDER_ASC)
         str->append(STRING_WITH_LEN(" ASC"));
-     else
+      else
         str->append(STRING_WITH_LEN(" DESC"));
     }
   }
@@ -4963,7 +4963,7 @@ int Item_func_group_concat::insert_record_to_unique()
 
 int Item_func_group_concat::insert_packed_record_to_unique()
 {
-  Descriptor *descriptor= unique_filter->get_descriptor();
+  Keys_descriptor *descriptor= unique_filter->get_keys_descriptor();
   uchar *rec_ptr;
   if ((rec_ptr= descriptor->make_record(skip_nulls())) == NULL)
     return -1; // NULL value
@@ -4973,8 +4973,8 @@ int Item_func_group_concat::insert_packed_record_to_unique()
 }
 
 
-Descriptor *Item_sum::get_descriptor_for_fixed_size_keys(uint args_count,
-                                                         uint size_arg)
+Keys_descriptor *Item_sum::get_descriptor_for_fixed_size_keys(uint args_count,
+                                                              uint size_arg)
 {
   if (args_count == 1)
     return new Fixed_size_keys_descriptor(size_arg);
@@ -4983,8 +4983,8 @@ Descriptor *Item_sum::get_descriptor_for_fixed_size_keys(uint args_count,
 }
 
 
-Descriptor *Item_sum::get_descriptor_for_variable_size_keys(uint args_count,
-                                                            uint size_arg)
+Keys_descriptor *Item_sum::get_descriptor_for_variable_size_keys(uint args_count,
+                                                                 uint size_arg)
 {
   if (args_count == 1)
     return new Variable_size_keys_simple(size_arg);
@@ -4993,7 +4993,7 @@ Descriptor *Item_sum::get_descriptor_for_variable_size_keys(uint args_count,
 }
 
 
-Descriptor*
+Keys_descriptor*
 Item_func_group_concat::get_descriptor_for_fixed_size_keys(uint args_count,
                                                            uint size_arg)
 {
@@ -5004,7 +5004,7 @@ Item_func_group_concat::get_descriptor_for_fixed_size_keys(uint args_count,
 }
 
 
-Descriptor*
+Keys_descriptor*
 Item_func_group_concat::get_descriptor_for_variable_size_keys(uint args_count,
                                                               uint size_arg)
 {

@@ -68,13 +68,13 @@ public:
 
 /*
 
-  Descriptor class storing information about the keys that would be
+  Keys_descriptor class storing information about the keys that would be
   inserted in the Unique tree. This is an abstract class which is
   extended by other class to support descriptors for keys with fixed and
   variable size.
 */
 
-class Descriptor : public Sql_alloc
+class Keys_descriptor : public Sql_alloc
 {
 protected:
 
@@ -106,7 +106,7 @@ protected:
   Sort_keys *sort_keys;
 
 public:
-  virtual ~Descriptor() {};
+  virtual ~Keys_descriptor() {};
   virtual uint get_length_of_key(uchar *ptr) = 0;
   bool is_variable_sized()
   {
@@ -130,38 +130,38 @@ public:
 
 
 /*
-  Descriptor for fixed size keys with single key part
+  Keys_descriptor for fixed size keys with single key part
 */
 
-class Fixed_size_keys_descriptor : public Descriptor
+class Fixed_size_keys_descriptor : public Keys_descriptor
 {
 public:
   Fixed_size_keys_descriptor(uint length);
   virtual ~Fixed_size_keys_descriptor() {}
   uint get_length_of_key(uchar *ptr) override { return max_length; }
-  bool setup_for_field(THD *thd, Field *field);
+  bool setup_for_field(THD *thd, Field *field) override;
   bool setup_for_item(THD *thd, Item_sum *item,
-                      uint non_const_args, uint arg_count);
+                      uint non_const_args, uint arg_count) override;
   virtual int compare_keys(uchar *a, uchar *b) override;
   virtual bool is_single_arg() override { return true; }
 };
 
 
 /*
-  Descriptor for fixed size mem-comparable keys with single key part
+  Keys_descriptor for fixed size mem-comparable keys with single key part
 */
 class Fixed_size_keys_mem_comparable: public Fixed_size_keys_descriptor
 {
 public:
   Fixed_size_keys_mem_comparable(uint length)
-    :Fixed_size_keys_descriptor(length){}
+    :Fixed_size_keys_descriptor(length) {}
   ~Fixed_size_keys_mem_comparable() {}
   int compare_keys(uchar *a, uchar *b) override;
 };
 
 
 /*
-  Descriptor for fixed size keys for rowid comparison
+  Keys_descriptor for fixed size keys for rowid comparison
 */
 class Fixed_size_keys_for_rowids: public Fixed_size_keys_descriptor
 {
@@ -170,17 +170,15 @@ private:
 
 public:
   Fixed_size_keys_for_rowids(handler *file_arg)
-    :Fixed_size_keys_descriptor(file_arg->ref_length)
-  {
-    file= file_arg;
-  }
+    :Fixed_size_keys_descriptor(file_arg->ref_length), file(file_arg)
+  { }
   ~Fixed_size_keys_for_rowids() {}
   int compare_keys(uchar *a, uchar *b) override;
 };
 
 
 /*
-  Descriptor for fixed size keys where a key part can be NULL
+  Keys_descriptor for fixed size keys where a key part can be NULL
   Used currently in JSON_ARRAYAGG
 */
 
@@ -195,7 +193,7 @@ public:
 
 
 /*
-  Descriptor for fixed size keys in group_concat
+  Keys_descriptor for fixed size keys in group_concat
 */
 class Fixed_size_keys_for_group_concat : public Fixed_size_keys_descriptor
 {
@@ -208,7 +206,7 @@ public:
 
 
 /*
-  Descriptor for fixed size keys with multiple key parts
+  Keys_descriptor for fixed size keys with multiple key parts
 */
 
 class Fixed_size_composite_keys_descriptor : public Fixed_size_keys_descriptor
@@ -226,7 +224,7 @@ public:
   Base class for the descriptor for variable size keys
 */
 
-class Variable_size_keys_descriptor : public Descriptor
+class Variable_size_keys_descriptor : public Keys_descriptor
 {
 public:
   Variable_size_keys_descriptor(uint length);
@@ -257,7 +255,7 @@ public:
 
 
 /*
-  Descriptor for variable size keys with only one component
+  Keys_descriptor for variable size keys with only one component
 
   Used by EITS, JSON_ARRAYAGG.
   COUNT(DISTINCT col) AND GROUP_CONCAT(DISTINCT col) are also allowed
@@ -280,7 +278,7 @@ public:
 
 
 /*
-  Descriptor for variable sized keys with multiple key parts
+  Keys_descriptor for variable sized keys with multiple key parts
 */
 class Variable_size_composite_key_desc : public Variable_size_keys_descriptor,
                                          public Encode_variable_size_key
@@ -297,7 +295,7 @@ public:
 
 
 /*
-  Descriptor for variable sized keys with multiple key parts for GROUP_CONCAT
+  Keys_descriptor for variable sized keys with multiple key parts for GROUP_CONCAT
 */
 
 class Variable_size_composite_key_desc_for_gconcat :
@@ -320,15 +318,15 @@ public:
    Unique -- An abstract class for unique (removing duplicates).
 */
 
-class Unique : public Sql_alloc {
+class Unique : public Sql_alloc
+{
 
 protected:
-
   /*
     Storing all meta-data information of the expressions whose value are
     being added to the Unique tree
   */
-  Descriptor *m_descriptor;
+  Keys_descriptor *m_descriptor;
 public:
 
   virtual void reset() = 0;
@@ -348,7 +346,7 @@ public:
   virtual bool is_in_memory() = 0;
 
   virtual ulong elements_in_tree() = 0;
-  Descriptor *get_descriptor() { return m_descriptor; }
+  Keys_descriptor *get_keys_descriptor() { return m_descriptor; }
 };
 
 
@@ -360,7 +358,8 @@ public:
    memory simultaneously with iteration, so it should be ~2-3x faster.
 */
 
-class Unique_impl : public Unique {
+class Unique_impl : public Unique
+{
   DYNAMIC_ARRAY file_ptrs;
   /* Total number of elements that will be stored in-memory */
   ulong max_elements;
@@ -413,17 +412,17 @@ class Unique_impl : public Unique {
       FALSE                    key successfully inserted in the Unique tree
   */
 
-  bool unique_add(void *ptr, uint size_arg)
+  bool unique_add(void *ptr, uint key_size)
   {
     DBUG_ENTER("unique_add");
     DBUG_PRINT("info", ("tree %u - %lu", tree.elements_in_tree, max_elements));
     TREE_ELEMENT *res;
-    size_t rec_size= size_arg + sizeof(TREE_ELEMENT) + tree.size_of_element;
+    size_t rec_size= key_size + sizeof(TREE_ELEMENT) + tree.size_of_element;
 
     if (!(tree.flag & TREE_ONLY_DUPS) && is_full(rec_size) && flush())
       DBUG_RETURN(1);
     uint count= tree.elements_in_tree;
-    res= tree_insert(&tree, ptr, size_arg, tree.custom_arg);
+    res= tree_insert(&tree, ptr, key_size, tree.custom_arg);
     if (tree.elements_in_tree != count)
     {
       /*
@@ -454,26 +453,26 @@ public:
 
   Unique_impl(qsort_cmp2 comp_func, void *comp_func_fixed_arg,
          uint size_arg, size_t max_in_memory_size_arg,
-         uint min_dupl_count_arg, Descriptor *desc);
+         uint min_dupl_count_arg, Keys_descriptor *desc);
   ~Unique_impl();
-  ulong elements_in_tree() { return tree.elements_in_tree; }
+  ulong elements_in_tree() override { return tree.elements_in_tree; }
 
   bool unique_add(void *ptr) override
   {
     return unique_add(ptr, m_descriptor->get_length_of_key((uchar*)ptr));
   }
 
-  bool is_in_memory() { return (my_b_tell(&file) == 0); }
-  void close_for_expansion() { tree.flag= TREE_ONLY_DUPS; }
+  bool is_in_memory() override { return (my_b_tell(&file) == 0); }
+  void close_for_expansion() override { tree.flag= TREE_ONLY_DUPS; }
 
-  bool get(TABLE *table);
-  
+  bool get(TABLE *table) override;
+
   /* Cost of searching for an element in the tree */
   inline static double get_search_cost(ulonglong tree_elems,
                                        double compare_factor)
   {
     return log((double) tree_elems) / (compare_factor * M_LN2);
-  }  
+  }
 
   static double get_use_cost(uint *buffer, size_t nkeys, uint key_size,
                              size_t max_in_memory_size, double compare_factor,
@@ -490,13 +489,13 @@ public:
   }
 
   void reset() override;
-  bool walk(TABLE *table, tree_walk_action action, void *walk_action_arg);
+  bool walk(TABLE *table, tree_walk_action action,
+            void *walk_action_arg) override;
 
   uint get_size() const { return size; }
   uint get_full_size() const { return full_size; }
-  size_t get_max_in_memory_size() const { return max_in_memory_size; }
-  bool is_count_stored() { return with_counters; }
-  IO_CACHE *get_file ()  { return &file; }
+  size_t get_max_in_memory_size() const override { return max_in_memory_size; }
+  IO_CACHE *get_file()  { return &file; }
   int write_record_to_file(uchar *key);
 
   // returns TRUE if the unique tree stores packed values
@@ -504,7 +503,6 @@ public:
 
   // returns TRUE if the key to be inserted has only one component
   bool is_single_arg() { return m_descriptor->is_single_arg(); }
-  Descriptor* get_descriptor() { return m_descriptor; }
 
   friend int unique_write_to_file(uchar* key, element_count count, Unique_impl *unique);
   friend int unique_write_to_ptrs(uchar* key, element_count count, Unique_impl *unique);

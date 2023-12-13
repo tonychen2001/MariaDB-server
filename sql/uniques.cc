@@ -73,7 +73,7 @@ int unique_intersect_write_to_ptrs(uchar* key, element_count count, Unique_impl 
 
 Unique_impl::Unique_impl(qsort_cmp2 comp_func, void * comp_func_fixed_arg,
 	             uint size_arg, size_t max_in_memory_size_arg,
-               uint min_dupl_count_arg, Descriptor *desc)
+               uint min_dupl_count_arg, Keys_descriptor *desc)
   :max_in_memory_size(max_in_memory_size_arg),
    size(size_arg),
    memory_used(0),
@@ -1057,7 +1057,7 @@ uchar* Variable_size_keys_simple::make_record(bool exclude_nulls)
     FALSE                      structures successfully created
 */
 
-bool Descriptor::init(THD *thd, uint count)
+bool Keys_descriptor::init(THD *thd, uint count)
 {
   if (sortorder)
     return false;
@@ -1074,21 +1074,21 @@ bool Descriptor::init(THD *thd, uint count)
 
 bool Variable_size_composite_key_desc::init(THD *thd, uint count)
 {
-  return Descriptor::init(thd, count) ||
+  return Keys_descriptor::init(thd, count) ||
          Encode_variable_size_key::init(max_length);
 }
 
 
 bool Variable_size_composite_key_desc_for_gconcat::init(THD *thd, uint count)
 {
-  return Descriptor::init(thd, count) ||
+  return Keys_descriptor::init(thd, count) ||
          Encode_key_for_group_concat::init(max_length);
 }
 
 
 bool Variable_size_keys_simple::init(THD *thd, uint count)
 {
-  return Descriptor::init(thd, count) ||
+  return Keys_descriptor::init(thd, count) ||
          Encode_variable_size_key::init(max_length);
 }
 
@@ -1145,7 +1145,7 @@ Fixed_size_keys_descriptor::setup_for_item(THD *thd, Item_sum *item,
                                            uint arg_count)
 {
   SORT_FIELD *pos;
-  if (Descriptor::init(thd, non_const_args))
+  if (Keys_descriptor::init(thd, non_const_args))
     return true;
   pos= sortorder;
 
@@ -1169,7 +1169,7 @@ bool
 Fixed_size_keys_descriptor::setup_for_field(THD *thd, Field *field)
 {
   SORT_FIELD *pos;
-  if (Descriptor::init(thd, 1))
+  if (Keys_descriptor::init(thd, 1))
     return true;
   pos= sortorder;
   pos->setup_key_part_for_fixed_size_key(field);
