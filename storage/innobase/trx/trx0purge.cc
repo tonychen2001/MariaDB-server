@@ -707,7 +707,16 @@ not_free:
           buf_pool.flush_hp.set(prev);
           mysql_mutex_unlock(&buf_pool.flush_list_mutex);
           if (!got_lock)
+          {
             bpage->lock.x_lock();
+            /* The functions buf_pool_t::release_freed_page() or
+            buf_do_flush_list_batch() may be right now holding
+            buf_pool.mutex and waiting to acquire
+            buf_pool.flush_list_mutex. Ensure that they can proceed.
+            This avoids extreme waits on Ubuntu 18.04. */
+            mysql_mutex_lock(&buf_pool.mutex);
+            mysql_mutex_unlock(&buf_pool.mutex);
+          }
         }
 
 #ifdef BTR_CUR_HASH_ADAPT
