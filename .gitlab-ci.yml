@@ -13,7 +13,7 @@ default:
 include:
   # This runs jobs in the .gitlab-ci.yml file in the branch corresponding to the commit.
   # This emulated the "default upstream" behaviour and runs jobs that are publicaly available.
-  - project: 'robinnew/test_mariadb_mirror'
+  - project: 'rds/mariadb'
     ref: $CI_COMMIT_REF_NAME
     file: '.gitlab-ci.yml'
     rules:
