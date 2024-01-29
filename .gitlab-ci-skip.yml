@@ -1,0 +1,4 @@
+skip:
+  stage: build
+  script: echo "Branch not covered by CI"
+  when: manual
