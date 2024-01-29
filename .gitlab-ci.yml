@@ -30,11 +30,3 @@ include:
   - local: '/.gitlab-ci-skip.yml'
     rules:
         - if: $CI_COMMIT_REF_NAME == "gitlab-ci"
-
-fedora:
-  # override upstream image
-  image: fedora:38
-  # override upstream runner
-  tags: 
-    - arch:amd64
-    - size:2xlarge

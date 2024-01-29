@@ -62,3 +62,11 @@ mini-benchmark internal:
     reports:
       metrics:
         - metrics.txt
+
+fedora:
+  # override upstream image
+  image: fedora:38
+  # override upstream runner
+  tags: 
+    - arch:amd64
+    - size:2xlarge
