@@ -1,6 +1,7 @@
 ---
 stages:
   # The stages listed here must represent all stages used in the jobs included.
+  # - internal build # additional stages can be added that are used only internally
   - build
   - test
   - sast
@@ -10,18 +11,30 @@ default:
   timeout: 3h
   
 include:
-  # This runs jobs in the .gitlab-ci-common.yml file located in the gitlab-ci branch.
-  # This should contain all jobs internal to AWS. Upstream does not see this.
-  - local: '/.gitlab-ci-common.yml'
   # This runs jobs in the .gitlab-ci.yml file in the branch corresponding to the commit.
   # This emulated the "default upstream" behaviour and runs jobs that are publicaly available.
-  - project: 'rds/mariadb'
+  - project: 'robinnew/test_mariadb_mirror'
     ref: $CI_COMMIT_REF_NAME
     file: '.gitlab-ci.yml'
-    # Uncomment and modify this line if you want to control which branches this can run on.
-    # rules:
-    #   - if: $CI_COMMIT_REF_NAME == "10.4" || $CI_COMMIT_REF_NAME == "10.5" || $CI_COMMIT_REF_NAME == "10.6" || $CI_COMMIT_REF_NAME == "10.11" ||  $CI_COMMIT_REF_NAME == "11.4"
+    rules:
+      # Uncomment and modify this line if you want to control which branches this can run on.
+      # - if: $CI_COMMIT_REF_NAME == "10.4" || $CI_COMMIT_REF_NAME == "10.5" || $CI_COMMIT_REF_NAME == "10.6" || $CI_COMMIT_REF_NAME == "10.11" ||  $CI_COMMIT_REF_NAME == "11.4"
+      - if: $CI_COMMIT_REF_NAME != "gitlab-ci"
+  # This runs jobs in the .gitlab-ci-common.yml file located in the gitlab-ci branch.
+  # This should contain all jobs internal to AWS. Upstream does not see this.
+  # Jobs here will override jobs with the same name in the upstream branch. The order of the include list matters in this case.
+  - local: '/.gitlab-ci-common.yml'
+    rules:
+      - if: $CI_COMMIT_REF_NAME != "gitlab-ci"
   # This is used to ensure that at lease one job is run when pushing changes to the gitlab-ci branch, otherwise the CI exits with an error.
   - local: '/.gitlab-ci-skip.yml'
     rules:
         - if: $CI_COMMIT_REF_NAME == "gitlab-ci"
+
+fedora:
+  # override upstream image
+  image: fedora:38
+  # override upstream runner
+  tags: 
+    - arch:amd64
+    - size:2xlarge
