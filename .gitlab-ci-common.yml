@@ -14,7 +14,6 @@
       # Must be able to see logs
       - build.log
 
-
 amazonlinux-2023-build:
   <<: *build-template
   image: amazonlinux:2023
@@ -30,39 +29,6 @@ amazonlinux-2023-build:
     - eatmydata make package -j $PARALLEL_PROC 2>&1 | tee -a ../build.log
     # - make test # TODO: Takes a very long time. Too long on regular runners.
 
-
-
-mini-benchmark internal:
-  stage: test
-  dependencies:
-    - fedora
-  needs:
-    - fedora
-  script:
-    - ls -la rpm; rm -vf rpm/*.el?.*  # Delete artifacts from Centos builds
-    # Don't use cracklib, otherwise the Sysbench user password will be rejected
-    - rm -vf rpm/*cracklib*.rpm
-    # Nothing provides galera-4 on Fedora, so this step fails if built with wsrep
-    - yum install -y rpm/*.rpm
-    # Fedora does not support running services in Docker (like Debian packages do) so start it manually
-    - /usr/bin/mariadb-install-db -u mysql
-    - sudo -u mysql /usr/sbin/mariadbd & sleep 10
-    # Since we did a manual start, we also need to run upgrade manually
-    - /usr/bin/mariadb-upgrade -u root
-    - |
-      mariadb --skip-column-names -e "SELECT @@version, @@version_comment" | tee /tmp/version
-      grep $MARIADB_MAJOR_VERSION /tmp/version || echo "MariaDB didn't install properly"
-    - yum install -y sysbench procps-ng perf util-linux || yum install -y https://kojipkgs.fedoraproject.org//packages/luajit/2.0.4/3.el7/x86_64/luajit-2.0.4-3.el7.x86_64.rpm https://kojipkgs.fedoraproject.org//packages/sysbench/1.0.17/2.el7/x86_64/sysbench-1.0.17-2.el7.x86_64.rpm https://kojipkgs.fedoraproject.org//packages/ck/0.5.2/2.el7/x86_64/ck-0.5.2-2.el7.x86_64.rpm
-    - /usr/share/mysql/mini-benchmark
-    - cp -av */sysbench-run-*.log */metrics.txt ..  # Move files one level down so they can be saved as artifacts
-  artifacts:
-    when: always
-    paths:
-      - sysbench-run-*.log
-    reports:
-      metrics:
-        - metrics.txt
-
 fedora:
   # override upstream image
   image: fedora:38
@@ -70,3 +36,22 @@ fedora:
   tags: 
     - arch:amd64
     - size:2xlarge
+
+fedora-ninja:
+  # override allow failure until https://github.com/MariaDB/server/pull/3026 is merged
+  allow_failure: true
+
+# This is not yet implemented, but a placeholder and example of what can be done with internal CI.
+mini-benchmark:
+  after_script:
+    - mkdir -p plots
+    # - ./parse_results.py  # Do additional analysis of reported results
+  artifacts:
+    when: always
+    paths:
+      - sysbench-run-*.log
+      # extend artifats with additional plots directory
+      - plots/
+    reports:
+      metrics:
+        - metrics.txt
