@@ -27,7 +27,6 @@ amazonlinux-2023-build:
     - cmake $CMAKE_FLAGS -O .. 2>&1 | tee -a ../build.log
     # Accelerate builds with unsafe disk access, as we can afford to loose the entire build anyway
     - eatmydata make package -j $PARALLEL_PROC 2>&1 | tee -a ../build.log
-    # - make test # TODO: Takes a very long time. Too long on regular runners.
 
 fedora:
   # override upstream image
