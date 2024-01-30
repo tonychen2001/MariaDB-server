@@ -37,6 +37,14 @@ fedora:
     - arch:amd64
     - size:2xlarge
 
+fedora-sanitizer:
+  # override upstream image
+  image: fedora:38
+  # override upstream runner
+  tags: 
+    - arch:amd64
+    - size:2xlarge
+
 fedora-ninja:
   # override allow failure until https://github.com/MariaDB/server/pull/3026 is merged
   allow_failure: true
