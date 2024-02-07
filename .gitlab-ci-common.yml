@@ -27,7 +27,7 @@ amazonlinux-2023-build:
     # If on older branch, build with bundled SSL
     - |
       if [[ "$CI_COMMIT_BRANCH" == "10.4" ]]; then
-        echo "In 10.4 branch"
+        CMAKE_FLAGS+=" -DWITH_SSL=bundled"
       fi
     - cmake $CMAKE_FLAGS -O .. 2>&1 | tee -a ../build.log
     # Accelerate builds with unsafe disk access, as we can afford to loose the entire build anyway
