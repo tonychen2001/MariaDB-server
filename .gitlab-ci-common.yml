@@ -28,6 +28,7 @@ amazonlinux-2023-build:
     - |
       if [[ "$CI_COMMIT_BRANCH" == "10.4" ]]; then
         CMAKE_FLAGS+=" -DWITH_SSL=bundled"
+        dnf install -y gnutls-devel
       fi
     - cmake $CMAKE_FLAGS -O .. 2>&1 | tee -a ../build.log
     # Accelerate builds with unsafe disk access, as we can afford to loose the entire build anyway
