@@ -25,7 +25,10 @@ amazonlinux-2023-build:
     - mkdir -p builddir && cd builddir
     # Configure the build with cmake
     # If on older branch, build with bundled SSL
-    - if [[ "$CI_COMMIT_BRANCH" == "10.4" ]]; then CMAKE_FLAGS+=" -DWITH_SSL=bundled" fi
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "10.4" ]]; then
+        echo "In 10.4 branch"
+      fi
     - cmake $CMAKE_FLAGS -O .. 2>&1 | tee -a ../build.log
     # Accelerate builds with unsafe disk access, as we can afford to loose the entire build anyway
     - eatmydata make package -j $PARALLEL_PROC 2>&1 | tee -a ../build.log
