@@ -87,16 +87,6 @@ cppcheck:
     GIT_STRATEGY: fetch
     GIT_SUBMODULE_STRATEGY: normal
   script:
-    # Only run sast scanning on select branches
-    - |
-      case "$CI_COMMIT_BRANCH" in
-        10.4|10.6|10.11)
-          echo will execute cppcheck for $CI_COMMIT_BRANCH
-          ;;
-        *)
-          echo will not execute cppcheck for $CI_COMMIT_BRANCH
-          exit 0
-          ;;
     - yum install -y cppcheck diffutils
     # --template: use a single-line template
     # --force: check large directories without warning
@@ -126,6 +116,8 @@ cppcheck:
     when: always
     paths:
       - cppcheck_sorted.txt
+  rules:
+    - if: $CI_COMMIT_BRANCH == "10.4" || $CI_COMMIT_BRANCH == "10.6" || $CI_COMMIT_BRANCH == "10.11"
 
 flawfinder:
   allow_failure: true
@@ -135,16 +127,6 @@ flawfinder:
     GIT_STRATEGY: fetch
     GIT_SUBMODULE_STRATEGY: normal
   script:
-    # Only run sast scanning on select branches
-    - |
-      case "$CI_COMMIT_BRANCH" in
-        10.4|10.6|10.11)
-          echo will execute cppcheck for $CI_COMMIT_BRANCH
-          ;;
-        *)
-          echo will not execute cppcheck for $CI_COMMIT_BRANCH
-          exit 0
-          ;;
     - yum install -y python3 python3-pip jq diffutils git
     - pip install flawfinder
     - flawfinder --falsepositive --quiet --html . > flawfinder-all-vulnerabilities.html
@@ -167,3 +149,5 @@ flawfinder:
     paths:
       - flawfinder-all-vulnerabilities.html
       - flawfinder-min-level5.json
+  rules:
+    - if: $CI_COMMIT_BRANCH == "10.4" || $CI_COMMIT_BRANCH == "10.6" || $CI_COMMIT_BRANCH == "10.11"
