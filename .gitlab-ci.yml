@@ -19,7 +19,14 @@ include:
     rules:
       # Uncomment and modify this line if you want to control which branches this can run on.
       # - if: $CI_COMMIT_REF_NAME == "10.4" || $CI_COMMIT_REF_NAME == "10.5" || $CI_COMMIT_REF_NAME == "10.6" || $CI_COMMIT_REF_NAME == "10.11" ||  $CI_COMMIT_REF_NAME == "11.4"
-      - if: $CI_COMMIT_REF_NAME != "gitlab-ci"
+      - if: $CI_PIPELINE_SOURCE != 'merge_request_event' && $CI_COMMIT_REF_NAME != "gitlab-ci"
+  - project: $CI_MERGE_REQUEST_SOURCE_PROJECT_PATH
+    ref: $CI_COMMIT_REF_NAME
+    file: '.gitlab-ci.yml'
+    rules:
+      # Uncomment and modify this line if you want to control which branches this can run on.
+      # - if: $CI_COMMIT_REF_NAME == "10.4" || $CI_COMMIT_REF_NAME == "10.5" || $CI_COMMIT_REF_NAME == "10.6" || $CI_COMMIT_REF_NAME == "10.11" ||  $CI_COMMIT_REF_NAME == "11.4"
+      - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_REF_NAME != "gitlab-ci"
   # This runs jobs in the .gitlab-ci-common.yml file located in the gitlab-ci branch.
   # This should contain all jobs internal to AWS. Upstream does not see this.
   # Jobs here will override jobs with the same name in the upstream branch. The order of the include list matters in this case.
