@@ -51,6 +51,10 @@ fedora-clang:
     - size:2xlarge
 
 fedora-sanitizer:
+  variables:
+  # disable performance schema plugin as it causes UBSAN to fail
+  # waiting for https://jira.mariadb.org/browse/MDEV-22940 to be fixed
+    CMAKE_FLAGS: "-DPLUGIN_PERFSCHEMA=NO -DWITH_SSL=system -DPLUGIN_COLUMNSTORE=NO -DPLUGIN_ROCKSDB=NO -DPLUGIN_S3=NO -DPLUGIN_MROONGA=NO -DPLUGIN_CONNECT=NO -DPLUGIN_TOKUDB=NO -DWITH_WSREP=OFF"
   # override upstream image
   image: fedora:38
   # override upstream runner
