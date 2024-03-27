@@ -81,6 +81,10 @@ fedora-ninja:
 #       metrics:
 #         - metrics.txt
 
+mini-benchmark:
+  tags:
+    - benchmark
+
 # Sast scanning is a mess when trying to maintain an ignorelist across all branches.
 # Let's allow failure until it can be properly cleaned up
 cppcheck:
