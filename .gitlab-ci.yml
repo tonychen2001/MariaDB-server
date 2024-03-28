@@ -27,6 +27,10 @@ include:
       # Uncomment and modify this line if you want to control which branches this can run on.
       # - if: $CI_COMMIT_REF_NAME == "10.4" || $CI_COMMIT_REF_NAME == "10.5" || $CI_COMMIT_REF_NAME == "10.6" || $CI_COMMIT_REF_NAME == "10.11" ||  $CI_COMMIT_REF_NAME == "11.4"
       - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_COMMIT_REF_NAME != "gitlab-ci"
+  - local: '/.gitlab-ci-mini-benchmark.yml'
+    rules:
+      - exists:
+          - '/support-files/mini-benchmark.sh'
   # This runs jobs in the .gitlab-ci-common.yml file located in the gitlab-ci branch.
   # This should contain all jobs internal to AWS. Upstream does not see this.
   # Jobs here will override jobs with the same name in the upstream branch. The order of the include list matters in this case.

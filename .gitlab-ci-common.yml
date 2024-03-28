@@ -66,21 +66,6 @@ fedora-ninja:
   # override allow failure until https://github.com/MariaDB/server/pull/3026 is merged
   allow_failure: true
 
-# # This is not yet implemented, but a placeholder and example of what can be done with internal CI.
-# mini-benchmark:
-#   after_script:
-#     - mkdir -p plots
-#     # - ./parse_results.py  # Do additional analysis of reported results
-#   artifacts:
-#     when: always
-#     paths:
-#       - sysbench-run-*.log
-#       # extend artifats with additional plots directory
-#       - plots/
-#     reports:
-#       metrics:
-#         - metrics.txt
-
 # Sast scanning is a mess when trying to maintain an ignorelist across all branches.
 # Let's allow failure until it can be properly cleaned up
 cppcheck:
