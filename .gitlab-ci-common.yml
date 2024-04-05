@@ -85,11 +85,9 @@ mini-benchmark:
       grep $MARIADB_MAJOR_VERSION /tmp/version || echo "MariaDB didn't install properly"
     - yum install -y sysbench procps-ng perf flamegraph flamegraph-stackcollapse-perf util-linux dnf-utils
     - |
-      if [[ "${MARIADB_MAJOR_VERSION}" =~ 10\..* ]]; then
+      if [[ "${MARIADB_MAJOR_VERSION}" =~ 10\..* || "${MARIADB_MAJOR_VERSION}" == "11.0" ]]; then
         /usr/share/mysql/mini-benchmark --perf 
-      fi
-    - |
-      if [[ "${MARIADB_MAJOR_VERSION}" =~ 11\..* ]]; then
+      else
         /usr/share/mariadb/mini-benchmark --perf 
       fi
     - cp -av */sysbench-run-*.log */metrics.txt .  # Move files one level down so they can be saved as artifacts
