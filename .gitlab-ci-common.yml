@@ -26,7 +26,7 @@ amazonlinux-2023-build:
     # Configure the build with cmake
     # If on older branch, build with bundled SSL
     - |
-      if [[ "$CI_COMMIT_BRANCH" == "10.4" ]]; then
+      if [[ "$MARIADB_MAJOR_VERSION" == "10.4" ]]; then
         CMAKE_FLAGS+=" -DWITH_SSL=bundled"
         dnf install -y gnutls-devel
       fi
